@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <style>
+        .ol-attribution a {
+            color: black;
+        }
+    </style>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>AIS</title>
+    <style>
+        html, body { width: 100%; height: 100%; margin: 0px; padding: 0px; }
+    </style>
+    <style type="text/css">
+        #myposition
+        {
+            float:left;
+            position:absolute;
+            bottom:10px;
+            width:400px;
+            height:20px;
+            z-index:2000;
+        }
+        .ol-dragbox {
+            background-color: rgba(255,255,255,0.4);
+            border-color: rgba(100,150,0,1);
+        }
+        .ol-popup {
+            position: absolute;
+            background-color: white;
+            -webkit-filter: drop-shadow(0 10px 4px rgba(96, 238, 102, 0.2));
+            filter: drop-shadow(0 10px 4px rgba(0,0,0,0.2));
+            padding: 5px;
+            border-radius: 20px;
+            border: 1px solid #cccccc;
+            bottom: 1px;
+            left: -50px;
+        }
+        .ol-popup:after, .ol-popup:before {
+            top: 100%;
+            border: solid transparent;
+            content: " ";
+            height: 0;
+            width: 0;
+            position: absolute;
+            pointer-events: none;
+        }
+        .ol-popup:after {
+            border-top-color: white;
+            border-width: 10px;
+            left: 48px;
+            margin-left: -10px;
+        }
+        .ol-popup:before {
+            border-top-color: #cccccc;
+            border-width: 11px;
+            left: 48px;
+            margin-left: -11px;
+        }
+        .ol-popup-closer {
+            text-decoration: none;
+            position: absolute;
+            top: 2px;
+            right: 8px;
+        }
+        .ol-popup-closer:after {
+            content: "X";
+        }
+
+    </style>
+
+    <script src="ol3/ol.js"></script>
+    <script src="ol3/geometry.js.js"></script>
+    <link href="ol3/ol.css" rel="stylesheet" />
+    <script src="https://cdn.polyfill.io/v2/polyfill.min.js?features=requestAnimationFrame,Element.prototype.classList,URL"></script>
+    <script src="https://openlayers.org/en/v4.6.5/build/ol.js"></script>
+    <script  type="text/javascript" >
+        var saoguan;
+        var ship;
+        var ship2;
+        var layer;
+        var draw;
+        var map;
+        var source;
+        var layer2;
+        function init() {
+            /*let use=[[1,2],[3,4]];
+            let use=[];
+            let b=[1,2];
+            use.push(b);
+            let e=[3,5];
+            use.push(e);
+            let a=use[0][1]-use[1][1];
+            alert(a);*/
+            saoguan = new ol.Feature({
+                //geometry:new ol.geom.Polygon([[[120.97, 23.1],[112, 21.1],[120.97, 20.1]]]).transform('EPSG:4326', 'EPSG:3857'),
+                geometry: new ol.geom.Point(ol.proj.fromLonLat([121.4782, 25.0581])),
+                name:"N32"
+            });
+            let use=[];
+            let a=saoguan.getGeometry().getCoordinates();
+            use.push(a);
+            use.push(a);
+            use.push(a);
+            alert(use[0][1]);
+            saoguan.setStyle(new ol.style.Style({
+                image: new ol.style.Icon({
+                   // src: 'https://www.williambuck.com/portals/0/Skins/WilliamBuck2014/images/location-icon.svg'
+                    src: 'ship.png',
+                    rotation:60
+                })
+            }));
+            source = new ol.source.Vector({
+                features: [saoguan]
+            });
+            var styles=[new ol.style.Style({
+                image: new ol.style.RegularShape({
+                    points: 3,
+                    radius: 10,
+                    radius1: 2,
+                    angle: 60,
+                    rotation: 30,
+                    rotateWithView: true,
+                    snapToPixel: false,
+                    stroke: new ol.style.Stroke({color: 'red', width: 0.1}),//外部边界颜色
+                    fill: new ol.style.Fill({color: 'blue'})
+                })
+            })];
+            var styles2=[new ol.style.Style({
+                image: new ol.style.Icon({
+                    src:"timg.png",
+                    rotation: 30,
+                    rotateWithView: true,
+                    snapToPixel: false,
+                    stroke: new ol.style.Stroke({color: 'red', width: 0.1}),//外部边界颜色
+                    fill: new ol.style.Fill({color: 'blue'})
+                })
+            })];
+            layer = new ol.layer.Vector({
+                source: source,
+            });
+            var rasterLayer = new ol.layer.Tile({
+                source: new ol.source.OSM(),
+                preload:true
+            });
+            var view = new ol.View({
+                //projection: 'EPSG:4326',//加上就无法显示地图，不知道是为什么
+                center: ol.proj.fromLonLat([113.5991, 24.8166]),
+                zoom: 3
+            });
+            map = new ol.Map({
+                layers: [rasterLayer,layer],
+                target: document.getElementById('MyMap'),
+                loadTilesWhileAnimating: false,//将这个设置为true，默认为false
+                view: view
+            });
+            //
+            var scaleLineControl = new ol.control.ScaleLine({
+
+                //设置度量单位为米
+
+                units: 'metric',
+
+                target: 'scalebar',
+
+                className: 'ol-scale-line'
+
+            });
+
+            //
+            var mousePositionControl = new ol.control.MousePosition({
+                className: 'mouseposition',
+                coordinateFormat: ol.coordinate.createStringXY(8),
+                projection: 'EPSG:4326',
+                target: document.getElementById('myposition')
+            });
+            map.addControl(mousePositionControl);//实现获取鼠标坐标及显示
+            map.addControl(scaleLineControl);//加载地图比例尺控件
+            
+            //
+            var imageStyle = new ol.style.Style({
+                image: new ol.style.Circle({
+                    radius: 1,
+                    snapToPixel: false,
+                    fill: new ol.style.Fill({color: 'white'}),//内部填充颜色
+                    stroke: new ol.style.Stroke({color: 'red', width: 0.1})//外部边界颜色
+                })
+            });
+
+
+            var n = 200;
+            var omegaTheta = 100000; // Rotation period in ms
+            var R = 7e6;
+            var r = 2e6;
+            var p = 1e1;
+
+
+            //这部分之后是加入弹出框
+            var container = document.getElementById('popup');
+            var content = document.getElementById('popup-content');
+            var closer = document.getElementById('popup-closer');
+            closer.onclick = function () {
+                overlay.setPosition(undefined);
+                closer.blur();
+                return false;
+            };
+            var overlay = new ol.Overlay(({
+                element: container,
+                autoPan: true,
+                autoPanAnimation: {
+                    duration: 250   //当Popup超出地图边界时，为了Popup全部可见，地图移动的速度. 单位为毫秒（ms）
+                }
+            }));
+
+            /*map.addEventListener('click', function (evt) {
+                var coordinate = evt.coordinate;
+                var hdms = ol.coordinate.toStringHDMS(ol.proj.transform(
+                    coordinate, 'EPSG:3857', 'EPSG:4326'));
+                content.innerHTML = '<p>坐标：</p><code>' + hdms + '</code>';
+                overlay.setPosition(coordinate);
+                map.addOverlay(overlay);
+            });*/
+            //feature 点击弹出框
+            /*var map_click = map.on('click', function (evt) {
+                var pixel = map.getEventPixel(evt.originalEvent);
+                var feature = map.forEachFeatureAtPixel(pixel, function (feature) {
+                    return feature;
+                });//判断当前单击处是否有要素，捕获到要素时弹出popup
+                var coordinate = evt.coordinate;
+                if (feature != undefined) {
+                    content.innerHTML ='<p>船号：N326</p>'+'<p>速度：32km/h</p>'+'<p>里程：320Km</p>';
+                    overlay.setPosition(coordinate);
+                    map.addOverlay(overlay);
+                }
+            });*/
+
+            //
+        }
+        //另一个函数
+        function bu(){
+            map.removeInteraction(draw);
+            source.clear();
+            draw = new ol.interaction.Draw({
+                source: source,
+                type:"Polygon"
+            });
+            map.addInteraction(draw);
+            function insidePolygon(points, testPoint){
+                var x = testPoint[0], y = testPoint[1];
+                var inside = false;
+                for (var i = 0, j = points.length - 1; i < points.length; j = i++) {
+                    var xi = points[i][0], yi = points[i][1];
+                    var xj = points[j][0], yj = points[j][1];
+
+                    var intersect = ((yi > y) != (yj > y))
+                        && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+                    if (intersect) inside = !inside;
+                }
+                return inside;
+            }
+        }
+        function bu2(){
+            map.removeInteraction(draw);
+            source.clear();
+            draw = new ol.interaction.Draw({
+                source: source,
+                type:"Circle"
+            });
+            map.addInteraction(draw);
+            function pointInsideCircle(point, circle, r) {
+                if (r===0) return false;
+                var dx = circle[0] - point[0];
+                var dy = circle[1] - point[1];
+                return dx * dx + dy * dy <= r * r;
+            }
+            draw.on('drawend',function(evt){
+                var polygon = evt.feature.getGeometry();
+                setTimeout(function(){              //如果不设置延迟，范围内要素选中后自动取消选中，具体原因不知道
+                    var center = polygon.getCenter(),radius = polygon.getRadius(),extent = polygon.getExtent();
+                    var features = layer2.getSource().getFeaturesInExtent(extent); //先缩小feature的范
+                    var name;
+                    for(var i=0;i<features.length;i++){
+                        //alert(features.length);
+                        name=features[i].getId();
+                        if(name=="N33")
+                            alert("选中航船"+name);
+                        else if(name=="N34")
+                            alert("选中航船"+name);
+                    }
+
+                },300)
+            })
+        }
+        function bu3(){
+            map.removeInteraction(draw);
+            source.clear();
+            var stx=Number(document.getElementById("firstpointx").value);
+            var sty=Number(document.getElementById("firstpointy").value);
+            var enx=Number(document.getElementById("lastpointx").value);
+            var eny=Number(document.getElementById("lastpointy").value);//必须加上number转换成数字类型，否则是string类型转换会出问题
+            source.addFeature(new ol.Feature(new ol.geom.Polygon([[[stx, sty],[enx, sty],[enx, eny],[stx,eny],[stx,sty]]]).transform('EPSG:4326', 'EPSG:3857')));
+        }
+    </script>
+
+</head>
+
+<body onload="init()">
+<div id="MyMap" class="mymap" style="width: 100%;height:60%;"></div>
+<div id="popup" class="ol-popup" >
+    <a href="#" id="popup-closer" class="ol-popup-closer"></a>
+    <div id="popup-content" style="width:300px; height:120px;font-size:10px; font-family:'微软雅黑"></div>
+</div>
+<div id="myposition" style="font-size:10px; color:black; font-family:'微软雅黑';"></div>
+<button type="button" onclick="bu()">绘制多边形</button>
+<button type="button" onclick="bu2()">绘制圆形</button>
+<br>
+右上角坐标:<br>
+<input type="text" id="firstpointx" value="121.1">
+<input type="text" id="firstpointy" value="25.97">
+<br>
+左下角坐标:<br>
+<input type="text" id="lastpointx" value="112">
+<input type="text" id="lastpointy" value="21.1">
+<br><br>
+<button type="button" onclick="bu3()">绘制矩形框</button>
+
+
+</body>
+</html>
